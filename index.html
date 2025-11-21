@@ -17,8 +17,11 @@
   input[type=text], select{width:340px;background:#0b0f19;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:10px 12px;font-size:14px;outline:none}
   input[type=datetime-local]{width:220px;background:#0b0f19;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:10px 12px;font-size:14px;outline:none}
 
-  /*background for calendar picker*/
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator {opacity: 1;filter: invert(80%) brightness(1.4);cursor: pointer;}
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    opacity: 1;
+    filter: invert(80%) brightness(1.4);
+    cursor: pointer;
+  }
 
   textarea{width:100%;min-height:220px;background:#0b0f19;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4;resize:vertical;outline:none}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -53,7 +56,10 @@
     <div class="brand"><span class="dot"></span><h1 style="margin:0">FMS Status Overrides</h1></div>
     <div class="pill" id="termStatus">Terminals: —</div>
   </div>
-  <div class="sub">Select an override, enter required fields (if shown), paste PROs, then Run. Only the <strong>visible</strong> fields are validated and used. Use <strong>Check Order Info</strong> to see current status/location without making changes.</div>
+  <div class="sub">
+    Select an override, enter required fields (if shown), paste PROs, then Run. Only the <strong>visible</strong> fields are validated and used.
+    Use <strong>Check Order Info</strong> to see current status/location without making changes.
+  </div>
 
   <div class="card stack">
     <div class="row">
@@ -129,7 +135,10 @@
   <div class="card" style="margin-top:16px">
     <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
       <strong>Output</strong>
-      <span class="muted">Success: <code>PRO -> DO - overridden</code> • Order check: <code>PRO -> DO | Loc: XXX | Status: YYY | Substatus: ZZZ</code></span>
+      <span class="muted">
+        Success: <code>PRO -> DO - overridden ---</code> •
+        Order check: <code>PRO -> DO | Loc: XXX | Status: YYY | Substatus: ZZZ ---</code>
+      </span>
     </div>
     <pre id="out"></pre>
   </div>
@@ -152,8 +161,8 @@
 /* =========================
    CONFIG
 ========================= */
-const BASE       = "https://fms.item.com";          // prod
-const BASE_STG   = "https://fms-staging.item.com";  // staging (for pickup/delivered examples)
+const BASE       = "https://fms.item.com";
+const BASE_STG   = "https://fms-staging.item.com"; // not used here but kept
 const COMPANY_ID = "SBFH";
 const FMS_CLIENT = "FMS_WEB";
 const USERNAME   = "RaulEscobar";
@@ -169,7 +178,7 @@ const PICKUP_URL     = `${BASE}/fms-platform-order/order-override-status/overrid
 const DELIVERED_URL  = `${BASE}/fms-platform-order/order-override-status/override-to-delivered`;
 const TERM_URL       = `${BASE}/fms-platform-dispatch-management/public-location/current-company-terminals?terminalType=0`;
 
-// New: order info endpoints for "Check Order Info"
+// For "Check Order Info"
 const ORDER_BASIC_URL = `${BASE}/fms-platform-order/shipper/getshipment-orderbasic/`;
 const ORDER_HEAD_URL  = `${BASE}/fms-platform-order/shipper/getshipment-orderbasic-headinfo/`;
 
@@ -177,41 +186,47 @@ const ORDER_HEAD_URL  = `${BASE}/fms-platform-order/shipper/getshipment-orderbas
    DOM
 ========================= */
 const $ = id => document.getElementById(id);
-const actionSel = $("action");
-const terminalBlock = $("terminalBlock");
-const pickupBlock = $("pickupBlock");
+const actionSel      = $("action");
+const terminalBlock  = $("terminalBlock");
+const pickupBlock    = $("pickupBlock");
 const deliveredBlock = $("deliveredBlock");
 
-const terminal = $("terminal");
-const termMeta = $("termMeta");
-const termErr  = $("termErr");
+const terminal   = $("terminal");
+const termMeta   = $("termMeta");
+const termErr    = $("termErr");
 const termStatus = $("termStatus");
 const refreshBtn = $("refreshTerms");
 const browseBtn  = $("browseTerms");
 
-const pickupDt = $("pickupDt");
-const deliveredDt = $("deliveredDt");
+const pickupDt   = $("pickupDt");
+const deliveredDt= $("deliveredDt");
 
-const input  = $("input");
-const runBtn = $("run");
-const prevBtn= $("preview");
-const expBtn = $("export");
+const input   = $("input");
+const runBtn  = $("run");
+const prevBtn = $("preview");
+const expBtn  = $("export");
 
-const out    = $("out");
-const status = $("status");
-const eta    = $("eta");
-const fill   = $("fill");
-const counts = $("counts");
-const proMeta= $("proMeta");
+const out     = $("out");
+const status  = $("status");
+const eta     = $("eta");
+const fill    = $("fill");
+const counts  = $("counts");
+const proMeta = $("proMeta");
 
 /* Modal */
-const mb = $("mb"), mlist = $("mlist"), msearch = $("msearch"), mclose = $("mclose");
+const mb      = $("mb");
+const mlist   = $("mlist");
+const msearch = $("msearch");
+const mclose  = $("mclose");
 
 /* =========================
    STATE
 ========================= */
-let TOKEN = null;
-let TERMS = []; let TERM_MAP = new Map(); let termsLoaded = false; let termsLoading = false;
+let TOKEN     = null;
+let TERMS     = [];
+let TERM_MAP  = new Map();
+let termsLoaded  = false;
+let termsLoading = false;
 
 /* =========================
    HELPERS
@@ -223,25 +238,28 @@ const isVisible = el => !!el && el.style.display !== "none";
 
 function setProg(done,total,startTs){
   const frac = total ? (done/total) : 0;
-  fill.style.width = (frac*100).toFixed(0)+"%";
+  fill.style.width = (frac*100).toFixed(0) + "%";
   counts.textContent = `${done}/${total}`;
   if (!total){ eta.textContent = "ETA —"; return; }
   const elapsed = (Date.now()-startTs)/1000;
   const rate = done ? done/elapsed : 0;
-  const rem = rate ? (total-done)/rate : Infinity;
+  const rem  = rate ? (total-done)/rate : Infinity;
   eta.textContent = `ETA ${isFinite(rem)?fmt(rem):"—"}`;
 }
 function fmt(sec){
   sec = Math.max(0,Math.floor(sec));
-  const m=Math.floor(sec/60), s=sec%60;
+  const m = Math.floor(sec/60);
+  const s = sec%60;
   return m ? `${m}m ${String(s).padStart(2,"0")}s` : `${s}s`;
 }
-function line(msg){ out.textContent += (out.textContent? "\n":"") + msg; }
+function line(msg){
+  out.textContent += (out.textContent ? "\n" : "") + msg;
+}
 function resetOutput(){
-  out.textContent="";
+  out.textContent = "";
   setProg(0,0,now());
-  status.textContent="Idle";
-  eta.textContent="ETA —";
+  status.textContent = "Idle";
+  eta.textContent = "ETA —";
 }
 function showErr(el,msg){ el.style.display="block"; el.textContent = msg; }
 function hideErr(el){ el.style.display="none"; el.textContent = ""; }
@@ -256,7 +274,7 @@ function toServerDate(dtLocal){
   return `${d} ${time}:00`;
 }
 
-/* Two-line failure summary */
+/* Failure summary (single-line text) */
 function summarizeFailureFromResponse(j){
   const arr = j?.data?.unfinished_task_on_trips;
   if (Array.isArray(arr) && arr.length){
@@ -266,13 +284,18 @@ function summarizeFailureFromResponse(j){
     const typeCap = type.charAt(0).toUpperCase()+type.slice(1).toLowerCase();
     if (trip) return `Unable to override Shipment status - ${typeCap} shipment assigned to Trip ${trip}`;
   }
-  let raw = (j?.data?.message || j?.message || "").toString().replace(/\uFF1A/g,":").trim().replace(/^Error:\s*/i,"");
+  let raw = (j?.data?.message || j?.message || "").toString()
+              .replace(/\uFF1A/g,":")
+              .trim()
+              .replace(/^Error:\s*/i,"");
   const tripMatch = raw.match(/TRIP-?([A-Za-z0-9-]+)/i);
   const taskMatch = raw.match(/\b(Delivery|Pickup)\b/i);
-  const tripStr = tripMatch ? (tripMatch[0].replace(/^TRIP-?/i,"Trip ")) : "";
-  const typeCap = taskMatch ? (taskMatch[0].charAt(0).toUpperCase()+taskMatch[0].slice(1).toLowerCase()) : "Delivery";
+  const tripStr   = tripMatch ? (tripMatch[0].replace(/^TRIP-?/i,"Trip ")) : "";
+  const typeCap   = taskMatch ? (taskMatch[0].charAt(0).toUpperCase()+taskMatch[0].slice(1).toLowerCase()) : "Delivery";
   if (tripStr) return `Unable to override Shipment status - ${typeCap} shipment assigned to ${tripStr}`;
-  const firstSentence = raw.split(/[\r\n]+/)[0].replace(/\s*;\s*\.*$/,"").replace(/\s*\.\s*$/,"");
+  const firstSentence = raw.split(/[\r\n]+/)[0]
+                           .replace(/\s*;\s*\.*$/,"")
+                           .replace(/\s*\.\s*$/,"");
   return firstSentence || "Override failed (no details provided)";
 }
 function isBusinessSuccess(j){
@@ -308,7 +331,7 @@ async function fetchTerminals(){
   if (termsLoading) return;
   termsLoading = true; termsLoaded = false;
   termStatus.textContent = "Terminals: Loading…";
-  termMeta.textContent = "Loading terminals…";
+  termMeta.textContent   = "Loading terminals…";
   hideErr(termErr);
   try{
     const token = await auth();
@@ -324,19 +347,22 @@ async function fetchTerminals(){
     if (!r.ok) throw new Error(`Terminal list HTTP ${r.status}`);
     const j = await r.json();
     const items = j?.data?.items || [];
-    TERMS = []; TERM_MAP.clear();
+    TERMS = [];
+    TERM_MAP.clear();
     for (const it of items){
-      const value = kUp(it.value); if (!value) continue;
+      const value = kUp(it.value);
+      if (!value) continue;
       const row = { value, text: it.text || value, terminal_type: it.terminal_type || "" };
-      TERMS.push(row); TERM_MAP.set(value,row);
+      TERMS.push(row);
+      TERM_MAP.set(value,row);
     }
     TERMS.sort((a,b)=>a.value.localeCompare(b.value));
     termsLoaded = TERMS.length > 0;
     termStatus.textContent = termsLoaded ? `Terminals: ${TERMS.length} ✓` : "Terminals: 0";
-    termMeta.textContent = termsLoaded ? `Loaded ${TERMS.length} terminals` : "No terminals returned";
+    termMeta.textContent   = termsLoaded ? `Loaded ${TERMS.length} terminals` : "No terminals returned";
     renderList();
   }catch(e){
-    termStatus.textContent="Terminals: Error";
+    termStatus.textContent = "Terminals: Error";
     showErr(termErr, e?.message || "Failed to load terminals");
   }finally{
     termsLoading=false;
@@ -355,10 +381,11 @@ function renderList(filter=""){
     return;
   }
   for (const t of src){
-    const el=document.createElement("div"); el.className="item";
+    const el=document.createElement("div");
+    el.className="item";
     el.innerHTML = `<div><span class="code">${t.value}</span> — <span class="muted">${t.text.replace(/</g,"&lt;")}</span></div><span class="badge">${t.terminal_type||""}</span>`;
     el.addEventListener("click", ()=>{
-      terminal.value=t.value;
+      terminal.value = t.value;
       closeModal();
       validateTerminal();
       enableButtons();
@@ -369,7 +396,7 @@ function renderList(filter=""){
 function validateTerminal(){
   hideErr(termErr);
   const key = kUp(terminal.value);
-  const ok = key && TERM_MAP.has(key);
+  const ok  = key && TERM_MAP.has(key);
   if (!key) showErr(termErr, "Enter a terminal or click Browse.");
   else if (!ok) showErr(termErr, "Not in live list. Pick from Browse or Refresh.");
   return ok;
@@ -403,19 +430,20 @@ async function searchOrders(token, tracking_nos){
   return r.json();
 }
 function buildMap(searchJson){
-  const map = {}; let items=[];
+  const map = {};
+  let items=[];
   if (Array.isArray(searchJson?.items)) items = searchJson.items;
   else if (Array.isArray(searchJson?.data?.items)) items = searchJson.data.items;
   for (const it of items){
-    const pro = String(it.tracking_no ?? it.trackingNo ?? "").trim();
-    const order = String(it.order_no ?? it.orderNo ?? "").trim();
+    const pro   = String(it.tracking_no ?? it.trackingNo ?? "").trim();
+    const order = String(it.order_no   ?? it.orderNo   ?? "").trim();
     if (/^\d{6,14}$/.test(pro) && /^DO\d{6,}$/.test(order)) map[pro] = order;
   }
   return map;
 }
 
 /* =========================
-   ENABLE BUTTONS (visible fields only)
+   ENABLE BUTTONS
 ========================= */
 function enableButtons(){
   const pros = parsePros(input.value);
@@ -433,13 +461,13 @@ function enableButtons(){
     if (!deliveredDt.value) { ok=false; reason="Set Delivered time."; }
   }
 
-  runBtn.disabled = !ok;
+  runBtn.disabled  = !ok;
   prevBtn.disabled = !pros.length;
   status.textContent = ok ? "Ready" : (reason || "Idle");
 }
 
 /* =========================
-   RUNNERS (APIs executed in sequence for each PRO)
+   RUNNERS (single-line per order, '---')
 ========================= */
 async function runOffload({token, terminalValue, pairs}){
   const headers={
@@ -450,9 +478,14 @@ async function runOffload({token, terminalValue, pairs}){
     "company-id":COMPANY_ID,
     "actual-operate-time":new Date().toISOString().slice(0,10)
   };
-  const start = now(); const total=pairs.length; const results=[]; setProg(0,total,start);
+  const start = now();
+  const total = pairs.length;
+  const results=[];
+  setProg(0,total,start);
   for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i]; const key = extractDOKey(DO); let ok=false, summary="";
+    const [pro, DO] = pairs[i];
+    const key = extractDOKey(DO);
+    let ok=false, summary="";
     if (key!=null){
       const payload = { order_status:"Override Offload", order_keys:[key], terminal: terminalValue };
       for (let a=0;a<=RETRIES;a++){
@@ -460,11 +493,20 @@ async function runOffload({token, terminalValue, pairs}){
           const r = await fetch(OFFLOAD_URL,{method:"POST",headers,body:JSON.stringify(payload)});
           const j = await r.json().catch(()=> ({}));
           const bizOk = r.ok && isBusinessSuccess(j);
-          if (bizOk){ ok=true; break; } else { summary = summarizeFailureFromResponse(j); }
-        }catch(e){ summary = e?.message || "Network error"; }
+          if (bizOk){ ok=true; break; }
+          else { summary = summarizeFailureFromResponse(j); }
+        }catch(e){
+          summary = e?.message || "Network error";
+        }
       }
-    } else { summary="Invalid DO format"; }
-    results.push(ok ? `${pro} -> ${DO} - overridden (Offload @ ${terminalValue})` : `${pro} -> ${DO}\n-${summary}`);
+    } else {
+      summary="Invalid DO format";
+    }
+    if (ok){
+      results.push(`${pro} -> ${DO} - overridden (Offload @ ${terminalValue}) ---`);
+    } else {
+      results.push(`${pro} -> ${DO} | ${summary || "Override failed"} ---`);
+    }
     setProg(i+1,total,start);
   }
   return results;
@@ -478,19 +520,30 @@ async function runNew({token, pairs}){
     "company-id":COMPANY_ID,
     "actual-operate-time":new Date().toISOString().slice(0,10)
   };
-  const start = now(); const total=pairs.length; const results=[]; setProg(0,total,start);
+  const start = now();
+  const total = pairs.length;
+  const results=[];
+  setProg(0,total,start);
   for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i]; let ok=false, summary="";
+    const [pro, DO] = pairs[i];
+    let ok=false, summary="";
     const payload = { order_no: DO, order_status:"New", pro_no: pro };
     for (let a=0;a<=RETRIES;a++){
       try{
         const r = await fetch(NEW_STATUS_URL,{method:"POST",headers,body:JSON.stringify(payload)});
         const j = await r.json().catch(()=> ({}));
         const bizOk = r.ok && isBusinessSuccess(j);
-        if (bizOk){ ok=true; break; } else { summary = summarizeFailureFromResponse(j); }
-      }catch(e){ summary = e?.message || "Network error"; }
+        if (bizOk){ ok=true; break; }
+        else { summary = summarizeFailureFromResponse(j); }
+      }catch(e){
+        summary = e?.message || "Network error";
+      }
     }
-    results.push(ok ? `${pro} -> ${DO} - overridden to NEW` : `${pro} -> ${DO}\n-${summary}`);
+    if (ok){
+      results.push(`${pro} -> ${DO} - overridden to NEW ---`);
+    } else {
+      results.push(`${pro} -> ${DO} | ${summary || "Override to NEW failed"} ---`);
+    }
     setProg(i+1,total,start);
   }
   return results;
@@ -505,19 +558,30 @@ async function runPickupComplete({token, pairs, dtLocal}){
     "actual-operate-time":new Date().toISOString().slice(0,10)
   };
   const pickupTime = toServerDate(dtLocal);
-  const start = now(); const total=pairs.length; const results=[]; setProg(0,total,start);
+  const start = now();
+  const total = pairs.length;
+  const results=[];
+  setProg(0,total,start);
   for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i]; let ok=false, summary="";
+    const [pro, DO] = pairs[i];
+    let ok=false, summary="";
     const payload = { order_no: DO, order_status:"Pickup Complete", pickup_complete_time: pickupTime, pro_no: pro };
     for (let a=0;a<=RETRIES;a++){
       try{
         const r = await fetch(PICKUP_URL,{method:"POST",headers,body:JSON.stringify(payload)});
         const j = await r.json().catch(()=> ({}));
         const bizOk = r.ok && isBusinessSuccess(j);
-        if (bizOk){ ok=true; break; } else { summary = summarizeFailureFromResponse(j); }
-      }catch(e){ summary = e?.message || "Network error"; }
+        if (bizOk){ ok=true; break; }
+        else { summary = summarizeFailureFromResponse(j); }
+      }catch(e){
+        summary = e?.message || "Network error";
+      }
     }
-    results.push(ok ? `${pro} -> ${DO} - overridden to PICKUP COMPLETE (${pickupTime})` : `${pro} -> ${DO}\n-${summary}`);
+    if (ok){
+      results.push(`${pro} -> ${DO} - overridden to PICKUP COMPLETE (${pickupTime}) ---`);
+    } else {
+      results.push(`${pro} -> ${DO} | ${summary || "Override to PICKUP COMPLETE failed"} ---`);
+    }
     setProg(i+1,total,start);
   }
   return results;
@@ -532,33 +596,43 @@ async function runDelivered({token, pairs, dtLocal}){
     "actual-operate-time":new Date().toISOString().slice(0,10)
   };
   const deliveredTime = toServerDate(dtLocal);
-  const start = now(); const total=pairs.length; const results=[]; setProg(0,total,start);
+  const start = now();
+  const total = pairs.length;
+  const results=[];
+  setProg(0,total,start);
   for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i]; let ok=false, summary="";
+    const [pro, DO] = pairs[i];
+    let ok=false, summary="";
     const payload = { order_no: DO, order_status:"Delivered", delivered_time: deliveredTime };
     for (let a=0;a<=RETRIES;a++){
       try{
         const r = await fetch(DELIVERED_URL,{method:"POST",headers,body:JSON.stringify(payload)});
         const j = await r.json().catch(()=> ({}));
         const bizOk = r.ok && isBusinessSuccess(j);
-        if (bizOk){ ok=true; break; } else { summary = summarizeFailureFromResponse(j); }
-      }catch(e){ summary = e?.message || "Network error"; }
+        if (bizOk){ ok=true; break; }
+        else { summary = summarizeFailureFromResponse(j); }
+      }catch(e){
+        summary = e?.message || "Network error";
+      }
     }
-    results.push(ok ? `${pro} -> ${DO} - overridden to DELIVERED (${deliveredTime})` : `${pro} -> ${DO}\n-${summary}`);
+    if (ok){
+      results.push(`${pro} -> ${DO} - overridden to DELIVERED (${deliveredTime}) ---`);
+    } else {
+      results.push(`${pro} -> ${DO} | ${summary || "Override to DELIVERED failed"} ---`);
+    }
     setProg(i+1,total,start);
   }
   return results;
 }
 
 /* =========================
-   MASTER RUN: overrides only
+   MASTER RUN
 ========================= */
 async function run(){
   resetOutput();
 
   const a = actionSel.value;
 
-  // Validate visible fields only (same behavior as before)
   if (a === "offload" && isVisible(terminalBlock) && !validateTerminal())
     return line("[Error] Pick a valid terminal.");
 
@@ -568,7 +642,6 @@ async function run(){
   if (a === "delivered" && isVisible(deliveredBlock) && !deliveredDt.value)
     return line("[Error] Set Delivered time.");
 
-  // Gather PROs
   const prosAll = parsePros(input.value);
   if (!prosAll.length) return line("[Error] No PROs found.");
   const overflow = prosAll.length>MAX_ORDERS ? prosAll.slice(MAX_ORDERS) : [];
@@ -582,8 +655,11 @@ async function run(){
     const data = await searchOrders(token, tracking);
 
     const map = buildMap(data);
-    const pairs = []; const missing=[];
-    for (const p of tracking){ map[p] ? pairs.push([p,map[p]]) : missing.push(p); }
+    const pairs   = [];
+    const missing = [];
+    for (const p of tracking){
+      map[p] ? pairs.push([p,map[p]]) : missing.push(p);
+    }
     line(`Mapped ${pairs.length} PRO→DO; ${missing.length} without DO.`);
 
     status.textContent = `Running ${a.replace("_"," ")} on ${pairs.length} order(s)…`;
@@ -599,10 +675,12 @@ async function run(){
     }
     results.forEach(line);
 
-    for (const p of missing) line(`${p} -> (no DO found) - not changed`);
+    for (const p of missing){
+      line(`${p} -> (no DO found) - not changed ---`);
+    }
     if (overflow.length){
       line(`NOT CHANGED (over ${MAX_ORDERS} cap):`);
-      overflow.forEach(p=>line(`  ${p}`));
+      overflow.forEach(p=>line(`  ${p} ---`));
     }
 
     status.textContent = "Done";
@@ -614,7 +692,8 @@ async function run(){
 }
 
 /* =========================
-   CHECK ORDER INFO (GET only; no overrides)
+   CHECK ORDER INFO
+   (single line per PRO, '---' at end)
 ========================= */
 async function checkOrderInfo(){
   resetOutput();
@@ -634,32 +713,29 @@ async function checkOrderInfo(){
     status.textContent = `Searching ${tracking.length} order(s)…`;
     const data = await searchOrders(token, tracking);
 
-    const map = buildMap(data);
+    const map   = buildMap(data);
     const start = now();
     const total = tracking.length;
     setProg(0,total,start);
 
-    // For each PRO, fetch orderbasic + headinfo via GET
     for (let i=0;i<tracking.length;i++){
       const pro = tracking[i];
-      const DO = map[pro];
+      const DO  = map[pro];
 
       if (!DO){
-        line(`${pro} -> (no DO found)`);
+        line(`${pro} -> (no DO found) ---`);
         setProg(i+1,total,start);
         continue;
       }
 
       let loc = null;
-      let statusDesc = null;
+      let statusDesc    = null;
       let subStatusDesc = null;
 
-      let basicOk = false;
-      let headOk = false;
+      let basicOk   = false;
+      let headOk    = false;
       let networkError = false;
-      let generalError = false;
 
-      // Common headers for GETs
       const headers = {
         "accept":"application/json, text/plain, */*",
         "fms-client":FMS_CLIENT,
@@ -667,7 +743,7 @@ async function checkOrderInfo(){
         "company-id":COMPANY_ID
       };
 
-      // 1) Basic info (location, shipper_order_no)
+      // Basic info
       try{
         const r = await fetch(ORDER_BASIC_URL + encodeURIComponent(DO), { method:"GET", headers });
         if (!r.ok) throw new Error("bad status");
@@ -678,37 +754,29 @@ async function checkOrderInfo(){
       }catch(e){
         if (e instanceof TypeError){
           networkError = true;
-        }else{
-          generalError = true;
         }
       }
 
-      // 2) Head info (status, substatus)
+      // Head info
       try{
         const r = await fetch(ORDER_HEAD_URL + encodeURIComponent(DO), { method:"GET", headers });
         if (!r.ok) throw new Error("bad status");
         const j = await r.json();
         const root = j?.data || j;
-        statusDesc = root?.order_status_describe ?? null;
+        statusDesc    = root?.order_status_describe ?? null;
         subStatusDesc = root?.order_sub_status_describe ?? null;
         headOk = true;
       }catch(e){
         if (e instanceof TypeError){
           networkError = true;
-        }else{
-          // if basic already errored, keep it as a general error; otherwise this is "additional" info error
-          generalError = true;
         }
       }
 
-      // Decide output line
       if (networkError){
-        line(`${pro} -> ${DO} | Network error - please check connection`);
+        line(`${pro} -> ${DO} | Network error - please check connection ---`);
       }else if (!basicOk && !headOk){
-        // Both failed with non-network errors (JSON parse, non-200, token, etc.)
-        line(`${pro} -> ${DO} | ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance`);
+        line(`${pro} -> ${DO} | ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance ---`);
       }else{
-        // At least one succeeded
         const segs = [];
         if (basicOk){
           segs.push(`Loc: ${loc || "—"}`);
@@ -724,24 +792,23 @@ async function checkOrderInfo(){
         if (!basicOk || !headOk){
           lineText += " | ERROR retrieving additional status info. Please try again or contact christopher.mosqueda@item.com for assistance";
         }
+        lineText += " ---";
         line(lineText);
       }
 
       setProg(i+1,total,start);
     }
 
-    // Report overflow PROs, which we didn't even attempt
     if (overflow.length){
       line(`NOT CHECKED (over ${MAX_ORDERS} cap):`);
-      overflow.forEach(p=>line(`  ${p}`));
+      overflow.forEach(p=>line(`  ${p} ---`));
     }
 
     status.textContent = "Check complete";
     expBtn.disabled = !out.textContent.trim();
   }catch(e){
     status.textContent = "Error";
-    // Treat top-level auth/search failures as generic order info errors
-    line(`ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance`);
+    line(`ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance ---`);
   }
 }
 
@@ -757,13 +824,13 @@ actionSel.addEventListener("change", ()=>{
   enableButtons();
 });
 input.addEventListener("input", ()=>{
-  const pros=parsePros(input.value);
-  proMeta.textContent=`${pros.length} PRO${pros.length===1?"":"s"} detected`;
+  const pros = parsePros(input.value);
+  proMeta.textContent = `${pros.length} PRO${pros.length===1?"":"s"} detected`;
   enableButtons();
 });
 terminal.addEventListener("input", ()=>{
-  const pos=terminal.selectionStart;
-  terminal.value=kUp(terminal.value);
+  const pos = terminal.selectionStart;
+  terminal.value = kUp(terminal.value);
   terminal.setSelectionRange(pos,pos);
   if (isVisible(terminalBlock)) validateTerminal();
   enableButtons();
@@ -795,7 +862,9 @@ expBtn.addEventListener("click", ()=>{
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `fms_overrides_${new Date().toISOString().replace(/[:.]/g,"-")}.txt`;
-  document.body.appendChild(a); a.click(); a.remove();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
   setTimeout(()=>URL.revokeObjectURL(a.href), 800);
 });
 
