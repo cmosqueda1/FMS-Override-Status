@@ -4,6 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>FMS Status Overrides</title>
+
 <style>
   :root{--bg:#0a0c10;--card:#0f1420;--text:#e6edf6;--muted:#93a4b7;--accent:#7c3aed;--accent2:#22d3ee;--ok:#10b981;--bad:#ef4444;--border:#1f2a3a}
   *{box-sizing:border-box}
@@ -12,869 +13,146 @@
   h1{margin:0 0 6px;font-size:26px;font-weight:800}
   .sub{color:var(--muted);margin-bottom:18px}
   .card{background:linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--card);border:1px solid var(--border);border-radius:18px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-  .stack{display:grid;gap:12px}
-  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-  input[type=text], select{width:340px;background:#0b0f19;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:10px 12px;font-size:14px;outline:none}
-  input[type=datetime-local]{width:220px;background:#0b0f19;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:10px 12px;font-size:14px;outline:none}
-
-  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-    opacity: 1;
-    filter: invert(80%) brightness(1.4);
-    cursor: pointer;
-  }
-
   textarea{width:100%;min-height:220px;background:#0b0f19;border:1px solid var(--border);color:var(--text);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4;resize:vertical;outline:none}
+  pre{white-space:pre-wrap;word-break:break-word;background:#0b0f19;border:1px solid var(--border);border-radius:14px;padding:12px;font-size:14px;max-height:420px;overflow:auto}
   .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .btn{cursor:pointer;border:1px solid transparent;border-radius:14px;padding:12px 16px;font-weight:700;font-size:14px}
   .btn-primary{background:linear-gradient(90deg,var(--accent),var(--accent2)); color:#060913}
   .btn-ghost{background:transparent;border-color:var(--border);color:var(--text)}
   .btn:disabled{opacity:.6;cursor:not-allowed}
-  .pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);background:#0b0f19;font-size:12px;color:var(--muted)}
   .bar{height:12px;border-radius:999px;background:#0b0f19;border:1px solid var(--border);overflow:hidden}
   .fill{height:100%;width:0;background:linear-gradient(90deg,var(--ok),var(--accent2));transition:width .2s ease}
   .muted{color:var(--muted);font-size:12px}
-  .err{color:var(--bad);font-size:12px}
-  pre{white-space:pre-wrap;word-break:break-word;background:#0b0f19;border:1px solid var(--border);border-radius:14px;padding:12px;font-size:13px;max-height:420px;overflow:auto}
   .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-  .brand{display:inline-flex;align-items:center;gap:10px}
-  .brand .dot{width:10px;height:10px;border-radius:50%;background:linear-gradient(90deg,var(--accent),var(--accent2));box-shadow:0 0 18px rgba(124,58,237,.7)}
-  .kvs{display:flex;gap:10px;flex-wrap:wrap}
-  .modal-back{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:50}
-  .modal{width:min(840px,92vw);max-height:80vh;background:#0f1420;border:1px solid var(--border);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.6);display:flex;flex-direction:column}
-  .modal header{display:flex;gap:10px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--border)}
-  .modal header input{flex:1;width:auto}
-  .modal .list{overflow:auto}
-  .item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px dashed #182234;cursor:pointer}
-  .item:hover{background:#0b0f19}
-  .badge{font-size:11px;border:1px solid var(--border);padding:3px 8px;border-radius:999px;color:var(--muted)}
-  .code{font-weight:800;letter-spacing:.3px}
 </style>
 </head>
+
 <body>
 <div class="wrap">
   <div class="hdr">
-    <div class="brand"><span class="dot"></span><h1 style="margin:0">FMS Status Overrides</h1></div>
-    <div class="pill" id="termStatus">Terminals: —</div>
-  </div>
-  <div class="sub">
-    Select an override, enter required fields (if shown), paste PROs, then Run. Only the <strong>visible</strong> fields are validated and used.
-    Use <strong>Check Order Info</strong> to see current status/location without making changes.
+    <h1>FMS Status Overrides</h1>
   </div>
 
-  <div class="card stack">
-    <div class="row">
-      <div>
-        <label for="action">Override Action</label>
-        <select id="action">
-          <option value="new">Override to New</option>
-          <option value="offload">Override Offload</option>
-          <option value="pickup_complete">Override Pickup Complete</option>
-          <option value="delivered">Override Delivered</option>
-        </select>
-      </div>
-
-      <!-- Offload-only -->
-      <div id="terminalBlock" style="display:none">
-        <label for="terminal">Terminal (live-validated)</label>
-        <div class="row">
-          <input type="text" id="terminal" placeholder="e.g., HAY or SEFL-DFW" autocomplete="off"/>
-          <button class="btn btn-ghost" id="browseTerms">Browse ⌄</button>
-          <button class="btn btn-ghost" id="refreshTerms">Refresh</button>
-        </div>
-        <div class="kvs">
-          <div class="muted" id="termMeta">—</div>
-          <div class="err" id="termErr" style="display:none"></div>
-        </div>
-      </div>
-
-      <!-- Pickup Complete-only -->
-      <div id="pickupBlock" style="display:none">
-        <label for="pickupDt">Pickup Complete time</label>
-        <div class="dt-wrap">
-          <input type="datetime-local" id="pickupDt"/>
-        </div>
-      </div>
-
-      <!-- Delivered-only -->
-      <div id="deliveredBlock" style="display:none">
-        <label for="deliveredDt">Delivered time</label>
-        <div class="dt-wrap">
-          <input type="datetime-local" id="deliveredDt"/>
-        </div>
-      </div>
-
-      <span class="pill">Retries: 2</span>
-    </div>
-
-    <div>
-      <label for="input">Tracking Numbers (any separators; we extract 6–14 digit PROs)</label>
-      <textarea id="input" placeholder="61807173
-61804271, 61804311
-3178258 3178259
-18391571"></textarea>
-      <div class="kvs">
-        <div class="muted" id="proMeta">0 PROs detected</div>
-        <div class="err" id="proErr" style="display:none"></div>
-      </div>
-    </div>
+  <div class="card">
+    <textarea id="input"></textarea>
 
     <div class="row">
-      <button class="btn btn-primary" id="run">Run Override</button>
       <button class="btn btn-ghost" id="preview">Check Order Info</button>
-      <button class="btn btn-ghost" id="export">Export Results (.txt)</button>
     </div>
 
-    <div class="row" style="justify-content:space-between">
-      <div class="muted" id="status">Idle</div>
-      <div class="muted" id="eta">ETA —</div>
-    </div>
     <div class="bar"><div class="fill" id="fill"></div></div>
-    <div class="muted" id="counts">0/0</div>
+    <div class="muted" id="status">Idle</div>
   </div>
 
   <div class="card" style="margin-top:16px">
-    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
-      <strong>Output</strong>
-      <span class="muted">
-        Success: <code>PRO -> DO - overridden ---</code> •
-        Order check: <code>PRO -> DO | Loc: XXX | Status: YYY | Substatus: ZZZ ---</code>
-      </span>
-    </div>
     <pre id="out"></pre>
   </div>
 </div>
 
-<!-- Terminal picker modal -->
-<div class="modal-back" id="mb">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mlabel">
-    <header>
-      <strong id="mlabel">Select Terminal</strong>
-      <input type="text" id="msearch" placeholder="Search (code or name)…" autocomplete="off"/>
-      <button class="btn btn-ghost" id="mclose">Close</button>
-    </header>
-    <div class="list" id="mlist"></div>
-  </div>
-</div>
-
 <script>
-(() => {
-/* =========================
-   CONFIG
-========================= */
-const BASE       = "https://fms.item.com";
-const BASE_STG   = "https://fms-staging.item.com"; // not used here but kept
-const COMPANY_ID = "SBFH";
-const FMS_CLIENT = "FMS_WEB";
-const USERNAME   = "RaulEscobar";
-const PASSWORD   = "FMSoffload1!";
-const MAX_ORDERS = 150;
-const RETRIES    = 2;
-
-const LOGIN_URL      = `${BASE}/fms-platform-user/Auth/Login`;
-const SEARCH_URL     = `${BASE}/fms-platform-order/shipment-orders/query`;
-const OFFLOAD_URL    = `${BASE}/fms-platform-order/status/shipment/set-offload`;
-const NEW_STATUS_URL = `${BASE}/fms-platform-order/order-override-status/override-to-new`;
-const PICKUP_URL     = `${BASE}/fms-platform-order/order-override-status/override-to-pickup-complete`;
-const DELIVERED_URL  = `${BASE}/fms-platform-order/order-override-status/override-to-delivered`;
-const TERM_URL       = `${BASE}/fms-platform-dispatch-management/public-location/current-company-terminals?terminalType=0`;
-
-// For "Check Order Info"
+const BASE = "https://fms.item.com";
 const ORDER_BASIC_URL = `${BASE}/fms-platform-order/shipper/getshipment-orderbasic/`;
 const ORDER_HEAD_URL  = `${BASE}/fms-platform-order/shipper/getshipment-orderbasic-headinfo/`;
 
-/* =========================
-   DOM
-========================= */
-const $ = id => document.getElementById(id);
-const actionSel      = $("action");
-const terminalBlock  = $("terminalBlock");
-const pickupBlock    = $("pickupBlock");
-const deliveredBlock = $("deliveredBlock");
+const FMS_CLIENT="FMS_WEB";
+const COMPANY_ID="SBFH";
+const USERNAME="RaulEscobar";
+const PASSWORD="FMSoffload1!";
+const MAX_ORDERS=150;
+const $=id=>document.getElementById(id);
 
-const terminal   = $("terminal");
-const termMeta   = $("termMeta");
-const termErr    = $("termErr");
-const termStatus = $("termStatus");
-const refreshBtn = $("refreshTerms");
-const browseBtn  = $("browseTerms");
+let TOKEN=null;
 
-const pickupDt   = $("pickupDt");
-const deliveredDt= $("deliveredDt");
-
-const input   = $("input");
-const runBtn  = $("run");
-const prevBtn = $("preview");
-const expBtn  = $("export");
-
-const out     = $("out");
-const status  = $("status");
-const eta     = $("eta");
-const fill    = $("fill");
-const counts  = $("counts");
-const proMeta = $("proMeta");
-
-/* Modal */
-const mb      = $("mb");
-const mlist   = $("mlist");
-const msearch = $("msearch");
-const mclose  = $("mclose");
-
-/* =========================
-   STATE
-========================= */
-let TOKEN     = null;
-let TERMS     = [];
-let TERM_MAP  = new Map();
-let termsLoaded  = false;
-let termsLoading = false;
-
-/* =========================
-   HELPERS
-========================= */
-const kUp = x => String(x||"").trim().toUpperCase();
-const parsePros = t => (String(t).match(/\b\d{6,14}\b/g) || []);
-const now = () => Date.now();
-const isVisible = el => !!el && el.style.display !== "none";
-
-function setProg(done,total,startTs){
-  const frac = total ? (done/total) : 0;
-  fill.style.width = (frac*100).toFixed(0) + "%";
-  counts.textContent = `${done}/${total}`;
-  if (!total){ eta.textContent = "ETA —"; return; }
-  const elapsed = (Date.now()-startTs)/1000;
-  const rate = done ? done/elapsed : 0;
-  const rem  = rate ? (total-done)/rate : Infinity;
-  eta.textContent = `ETA ${isFinite(rem)?fmt(rem):"—"}`;
-}
-function fmt(sec){
-  sec = Math.max(0,Math.floor(sec));
-  const m = Math.floor(sec/60);
-  const s = sec%60;
-  return m ? `${m}m ${String(s).padStart(2,"0")}s` : `${s}s`;
-}
-function line(msg){
-  out.textContent += (out.textContent ? "\n" : "") + msg;
-}
-function resetOutput(){
-  out.textContent = "";
-  setProg(0,0,now());
-  status.textContent = "Idle";
-  eta.textContent = "ETA —";
-}
-function showErr(el,msg){ el.style.display="block"; el.textContent = msg; }
-function hideErr(el){ el.style.display="none"; el.textContent = ""; }
-function extractDOKey(DO){
-  const m = String(DO).match(/\bDO(\d{6,})\b/i);
-  return m ? Number(m[1]) : null;
-}
-function toServerDate(dtLocal){
-  if (!dtLocal) return "";
-  const [d,t] = dtLocal.split("T");
-  const time = (t || "00:00").padStart(5,"0");
-  return `${d} ${time}:00`;
-}
-
-/* Failure summary (single-line text) */
-function summarizeFailureFromResponse(j){
-  const arr = j?.data?.unfinished_task_on_trips;
-  if (Array.isArray(arr) && arr.length){
-    const t = arr[0] || {};
-    const trip = (t.trip_no || t.tripNo || "").toString().trim();
-    let type = (t.task_type_name || t.taskTypeName || "").toString().trim() || "Delivery";
-    const typeCap = type.charAt(0).toUpperCase()+type.slice(1).toLowerCase();
-    if (trip) return `Unable to override Shipment status - ${typeCap} shipment assigned to Trip ${trip}`;
-  }
-  let raw = (j?.data?.message || j?.message || "").toString()
-              .replace(/\uFF1A/g,":")
-              .trim()
-              .replace(/^Error:\s*/i,"");
-  const tripMatch = raw.match(/TRIP-?([A-Za-z0-9-]+)/i);
-  const taskMatch = raw.match(/\b(Delivery|Pickup)\b/i);
-  const tripStr   = tripMatch ? (tripMatch[0].replace(/^TRIP-?/i,"Trip ")) : "";
-  const typeCap   = taskMatch ? (taskMatch[0].charAt(0).toUpperCase()+taskMatch[0].slice(1).toLowerCase()) : "Delivery";
-  if (tripStr) return `Unable to override Shipment status - ${typeCap} shipment assigned to ${tripStr}`;
-  const firstSentence = raw.split(/[\r\n]+/)[0]
-                           .replace(/\s*;\s*\.*$/,"")
-                           .replace(/\s*\.\s*$/,"");
-  return firstSentence || "Override failed (no details provided)";
-}
-function isBusinessSuccess(j){
-  if (j && typeof j === "object"){
-    if (j.data && "success" in j.data && j.data.success === false) return false;
-    if (j.status && String(j.status).toLowerCase() === "fail") return false;
-    if ("is_success" in j && j.is_success === false) return false;
-  }
-  return true;
-}
-
-/* =========================
-   AUTH & LOOKUPS
-========================= */
-async function auth(force=false){
-  if (TOKEN && !force) return TOKEN;
-  const r = await fetch(LOGIN_URL,{
+async function auth(){
+  if(TOKEN) return TOKEN;
+  const r = await fetch(`${BASE}/fms-platform-user/Auth/Login`,{
     method:"POST",
-    headers:{
-      "fms-client":FMS_CLIENT,
-      "Content-Type":"application/json"
-    },
+    headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({account:USERNAME,password:PASSWORD})
   });
-  if (!r.ok) throw new Error(`Auth HTTP ${r.status}`);
-  const j = await r.json().catch(()=> ({}));
-  TOKEN = j.token || j?.data?.token || j?.result?.token || "";
-  if (!TOKEN) throw new Error("No token returned");
+  const j = await r.json();
+  TOKEN = j.token;
   return TOKEN;
 }
 
-async function fetchTerminals(){
-  if (termsLoading) return;
-  termsLoading = true; termsLoaded = false;
-  termStatus.textContent = "Terminals: Loading…";
-  termMeta.textContent   = "Loading terminals…";
-  hideErr(termErr);
-  try{
-    const token = await auth();
-    const r = await fetch(TERM_URL,{
-      headers:{
-        "accept":"application/json, text/plain, */*",
-        "fms-client":FMS_CLIENT,
-        "fms-token":token,
-        "company-id":COMPANY_ID,
-        "actual-operate-time":new Date().toISOString().slice(0,10)
-      }
-    });
-    if (!r.ok) throw new Error(`Terminal list HTTP ${r.status}`);
-    const j = await r.json();
-    const items = j?.data?.items || [];
-    TERMS = [];
-    TERM_MAP.clear();
-    for (const it of items){
-      const value = kUp(it.value);
-      if (!value) continue;
-      const row = { value, text: it.text || value, terminal_type: it.terminal_type || "" };
-      TERMS.push(row);
-      TERM_MAP.set(value,row);
-    }
-    TERMS.sort((a,b)=>a.value.localeCompare(b.value));
-    termsLoaded = TERMS.length > 0;
-    termStatus.textContent = termsLoaded ? `Terminals: ${TERMS.length} ✓` : "Terminals: 0";
-    termMeta.textContent   = termsLoaded ? `Loaded ${TERMS.length} terminals` : "No terminals returned";
-    renderList();
-  }catch(e){
-    termStatus.textContent = "Terminals: Error";
-    showErr(termErr, e?.message || "Failed to load terminals");
-  }finally{
-    termsLoading=false;
-    enableButtons();
-  }
-}
-function renderList(filter=""){
-  const q = kUp(filter);
-  mlist.innerHTML = "";
-  const src = TERMS.filter(t=>!q || t.value.includes(q) || kUp(t.text).includes(q));
-  if (!src.length){
-    const d=document.createElement("div");
-    d.className="item";
-    d.innerHTML=`<div class="muted">No matches</div>`;
-    mlist.appendChild(d);
-    return;
-  }
-  for (const t of src){
-    const el=document.createElement("div");
-    el.className="item";
-    el.innerHTML = `<div><span class="code">${t.value}</span> — <span class="muted">${t.text.replace(/</g,"&lt;")}</span></div><span class="badge">${t.terminal_type||""}</span>`;
-    el.addEventListener("click", ()=>{
-      terminal.value = t.value;
-      closeModal();
-      validateTerminal();
-      enableButtons();
-    });
-    mlist.appendChild(el);
-  }
-}
-function validateTerminal(){
-  hideErr(termErr);
-  const key = kUp(terminal.value);
-  const ok  = key && TERM_MAP.has(key);
-  if (!key) showErr(termErr, "Enter a terminal or click Browse.");
-  else if (!ok) showErr(termErr, "Not in live list. Pick from Browse or Refresh.");
-  return ok;
+function parsePros(t){
+  return (String(t).match(/\b\d{6,14}\b/g) || []);
 }
 
-/* =========================
-   SEARCH & MAP PRO->DO
-========================= */
-async function searchOrders(token, tracking_nos){
-  const headers={
-    "fms-client":FMS_CLIENT,
-    "fms-token":token,
-    "Content-Type":"application/json",
-    "Company-Id":COMPANY_ID
-  };
-  const body={
-    bill_to_accounts:[], bols:[], business_client:"",
-    consignee_state:[], consignee_terminals:[], consignee_zip_codes:[],
-    current_locations:[], customer_references:[], delayed:false,
-    delivery_appointment:[], delivery_date:[], desired_delivery_date:[],
-    exception:false, hold:false, lh_eta_date:[], lh_etd_date:[],
-    lhs:[], master_order_ids:[], order_nos:[], origin_states:[],
-    origin_zip_codes:[], page_number:1, page_size: Math.min(tracking_nos.length, MAX_ORDERS),
-    pickup_appointment:[], pickup_complete_date:[], po_nos:[], pu_nos:[],
-    record_status:"0", request_pickup_date:[], service_levels:[],
-    service_terminals:[], shipment_types:[], shipper_terminals:[],
-    status:[], sub_status:[], tracking_nos, trips:[]
-  };
-  const r = await fetch(SEARCH_URL,{method:"POST",headers,body:JSON.stringify(body)});
-  if (!r.ok) throw new Error(`Search HTTP ${r.status}`);
-  return r.json();
-}
-function buildMap(searchJson){
-  const map = {};
-  let items=[];
-  if (Array.isArray(searchJson?.items)) items = searchJson.items;
-  else if (Array.isArray(searchJson?.data?.items)) items = searchJson.data.items;
-  for (const it of items){
-    const pro   = String(it.tracking_no ?? it.trackingNo ?? "").trim();
-    const order = String(it.order_no   ?? it.orderNo   ?? "").trim();
-    if (/^\d{6,14}$/.test(pro) && /^DO\d{6,}$/.test(order)) map[pro] = order;
-  }
-  return map;
-}
+function line(msg){ out.textContent += (out.textContent ? "\n" : "") + msg; }
+function resetOutput(){ out.textContent=""; }
 
-/* =========================
-   ENABLE BUTTONS
-========================= */
-function enableButtons(){
-  const pros = parsePros(input.value);
-  let ok = pros.length > 0;
-  let reason = "";
+function clean(v){ return (v==null||v==="")?"-":String(v).trim(); }
 
-  if (isVisible(terminalBlock)) {
-    const t = kUp(terminal.value);
-    if (!(t && TERM_MAP.has(t))) { ok=false; reason="Pick a valid terminal."; }
-  }
-  if (isVisible(pickupBlock)) {
-    if (!pickupDt.value) { ok=false; reason="Set Pickup Complete time."; }
-  }
-  if (isVisible(deliveredBlock)) {
-    if (!deliveredDt.value) { ok=false; reason="Set Delivered time."; }
-  }
-
-  runBtn.disabled  = !ok;
-  prevBtn.disabled = !pros.length;
-  status.textContent = ok ? "Ready" : (reason || "Idle");
-}
-
-/* =========================
-   RUNNERS (single-line per order, '---')
-========================= */
-async function runOffload({token, terminalValue, pairs}){
-  const headers={
-    "Accept":"application/json, text/plain, */*",
-    "Content-Type":"application/json",
-    "fms-client":FMS_CLIENT,
-    "fms-token":token,
-    "company-id":COMPANY_ID,
-    "actual-operate-time":new Date().toISOString().slice(0,10)
-  };
-  const start = now();
-  const total = pairs.length;
-  const results=[];
-  setProg(0,total,start);
-  for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i];
-    const key = extractDOKey(DO);
-    let ok=false, summary="";
-    if (key!=null){
-      const payload = { order_status:"Override Offload", order_keys:[key], terminal: terminalValue };
-      for (let a=0;a<=RETRIES;a++){
-        try{
-          const r = await fetch(OFFLOAD_URL,{method:"POST",headers,body:JSON.stringify(payload)});
-          const j = await r.json().catch(()=> ({}));
-          const bizOk = r.ok && isBusinessSuccess(j);
-          if (bizOk){ ok=true; break; }
-          else { summary = summarizeFailureFromResponse(j); }
-        }catch(e){
-          summary = e?.message || "Network error";
-        }
-      }
-    } else {
-      summary="Invalid DO format";
-    }
-    if (ok){
-      results.push(`${pro} | PU - -> ${DO} - overridden (Offload @ ${terminalValue}) ---`);
-    } else {
-      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override failed"} ---`);
-    }
-    setProg(i+1,total,start);
-  }
-  return results;
-}
-async function runNew({token, pairs}){
-  const headers={
-    "accept":"application/json, text/plain, */*",
-    "content-type":"application/json",
-    "fms-client":FMS_CLIENT,
-    "fms-token":token,
-    "company-id":COMPANY_ID,
-    "actual-operate-time":new Date().toISOString().slice(0,10)
-  };
-  const start = now();
-  const total = pairs.length;
-  const results=[];
-  setProg(0,total,start);
-  for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i];
-    let ok=false, summary="";
-    const payload = { order_no: DO, order_status:"New", pro_no: pro };
-    for (let a=0;a<=RETRIES;a++){
-      try{
-        const r = await fetch(NEW_STATUS_URL,{method:"POST",headers,body:JSON.stringify(payload)});
-        const j = await r.json().catch(()=> ({}));
-        const bizOk = r.ok && isBusinessSuccess(j);
-        if (bizOk){ ok=true; break; }
-        else { summary = summarizeFailureFromResponse(j); }
-      }catch(e){
-        summary = e?.message || "Network error";
-      }
-    }
-    if (ok){
-      results.push(`${pro} | PU - -> ${DO} - overridden to NEW ---`);
-    } else {
-      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to NEW failed"} ---`);
-    }
-    setProg(i+1,total,start);
-  }
-  return results;
-}
-async function runPickupComplete({token, pairs, dtLocal}){
-  const headers={
-    "accept":"application/json, text/plain, */*",
-    "content-type":"application/json",
-    "fms-client":FMS_CLIENT,
-    "fms-token":token,
-    "company-id":COMPANY_ID,
-    "actual-operate-time":new Date().toISOString().slice(0,10)
-  };
-  const pickupTime = toServerDate(dtLocal);
-  const start = now();
-  const total = pairs.length;
-  const results=[];
-  setProg(0,total,start);
-  for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i];
-    let ok=false, summary="";
-    const payload = { order_no: DO, order_status:"Pickup Complete", pickup_complete_time: pickupTime, pro_no: pro };
-    for (let a=0;a<=RETRIES;a++){
-      try{
-        const r = await fetch(PICKUP_URL,{method:"POST",headers,body:JSON.stringify(payload)});
-        const j = await r.json().catch(()=> ({}));
-        const bizOk = r.ok && isBusinessSuccess(j);
-        if (bizOk){ ok=true; break; }
-        else { summary = summarizeFailureFromResponse(j); }
-      }catch(e){
-        summary = e?.message || "Network error";
-      }
-    }
-    if (ok){
-      results.push(`${pro} | PU - -> ${DO} - overridden to PICKUP COMPLETE (${pickupTime}) ---`);
-    } else {
-      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to PICKUP COMPLETE failed"} ---`);
-    }
-    setProg(i+1,total,start);
-  }
-  return results;
-}
-async function runDelivered({token, pairs, dtLocal}){
-  const headers={
-    "accept":"application/json, text/plain, */*",
-    "content-type":"application/json",
-    "fms-client":FMS_CLIENT,
-    "fms-token":token,
-    "company-id":COMPANY_ID,
-    "actual-operate-time":new Date().toISOString().slice(0,10)
-  };
-  const deliveredTime = toServerDate(dtLocal);
-  const start = now();
-  const total = pairs.length;
-  const results=[];
-  setProg(0,total,start);
-  for (let i=0;i<pairs.length;i++){
-    const [pro, DO] = pairs[i];
-    let ok=false, summary="";
-    const payload = { order_no: DO, order_status:"Delivered", delivered_time: deliveredTime };
-    for (let a=0;a<=RETRIES;a++){
-      try{
-        const r = await fetch(DELIVERED_URL,{method:"POST",headers,body:JSON.stringify(payload)});
-        const j = await r.json().catch(()=> ({}));
-        const bizOk = r.ok && isBusinessSuccess(j);
-        if (bizOk){ ok=true; break; }
-        else { summary = summarizeFailureFromResponse(j); }
-      }catch(e){
-        summary = e?.message || "Network error";
-      }
-    }
-    if (ok){
-      results.push(`${pro} | PU - -> ${DO} - overridden to DELIVERED (${deliveredTime}) ---`);
-    } else {
-      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to DELIVERED failed"} ---`);
-    }
-    setProg(i+1,total,start);
-  }
-  return results;
-}
-
-/* =========================
-   MASTER RUN
-========================= */
-async function run(){
+$("preview").addEventListener("click", async ()=>{
   resetOutput();
-
-  const a = actionSel.value;
-
-  if (a === "offload" && isVisible(terminalBlock) && !validateTerminal())
-    return line("[Error] Pick a valid terminal.");
-
-  if (a === "pickup_complete" && isVisible(pickupBlock) && !pickupDt.value)
-    return line("[Error] Set Pickup Complete time.");
-
-  if (a === "delivered" && isVisible(deliveredBlock) && !deliveredDt.value)
-    return line("[Error] Set Delivered time.");
-
-  const prosAll = parsePros(input.value);
-  if (!prosAll.length) return line("[Error] No PROs found.");
-  const overflow = prosAll.length>MAX_ORDERS ? prosAll.slice(MAX_ORDERS) : [];
-  const tracking = prosAll.slice(0,MAX_ORDERS);
-
-  try{
-    status.textContent = "Authenticating…";
-    const token = await auth();
-
-    status.textContent = `Searching ${tracking.length} order(s)…`;
-    const data = await searchOrders(token, tracking);
-
-    const map = buildMap(data);
-    const pairs   = [];
-    const missing = [];
-    for (const p of tracking){
-      map[p] ? pairs.push([p,map[p]]) : missing.push(p);
-    }
-    line(`Mapped ${pairs.length} PRO→DO; ${missing.length} without DO.`);
-
-    status.textContent = `Running ${a.replace("_"," ")} on ${pairs.length} order(s)…`;
-    let results=[];
-    if (a==="offload"){
-      results = await runOffload({token, terminalValue:kUp(terminal.value), pairs});
-    } else if (a==="new"){
-      results = await runNew({token, pairs});
-    } else if (a==="pickup_complete"){
-      results = await runPickupComplete({token, pairs, dtLocal:pickupDt.value});
-    } else if (a==="delivered"){
-      results = await runDelivered({token, pairs, dtLocal:deliveredDt.value});
-    }
-    results.forEach(line);
-
-    for (const p of missing){
-      line(`${p} -> (no DO found) - not changed ---`);
-    }
-    if (overflow.length){
-      line(`NOT CHANGED (over ${MAX_ORDERS} cap):`);
-      overflow.forEach(p=>line(`  ${p} ---`));
-    }
-
-    status.textContent = "Done";
-    expBtn.disabled = !out.textContent.trim();
-  }catch(e){
-    status.textContent = "Error";
-    line(`[Error] ${e.message||e}`);
-  }
-}
-
-/* =========================
-   CHECK ORDER INFO
-   (single line per PRO, '---' at end)
-========================= */
-async function checkOrderInfo(){
-  resetOutput();
-
-  const prosAll = parsePros(input.value);
-  if (!prosAll.length){
-    line("[Error] No PROs found.");
-    return;
-  }
-  const overflow = prosAll.length>MAX_ORDERS ? prosAll.slice(MAX_ORDERS) : [];
-  const tracking = prosAll.slice(0,MAX_ORDERS);
-
-  try{
-    status.textContent = "Authenticating…";
-    const token = await auth();
-
-    status.textContent = `Searching ${tracking.length} order(s)…`;
-    const data = await searchOrders(token, tracking);
-
-    const map   = buildMap(data);
-    const start = now();
-    const total = tracking.length;
-    setProg(0,total,start);
-
-    for (let i=0;i<tracking.length;i++){
-      const pro = tracking[i];
-      const DO  = map[pro];
-
-      if (!DO){
-        line(`${pro} -> (no DO found) ---`);
-        setProg(i+1,total,start);
-        continue;
-      }
-
-      let loc = null;
-      let statusDesc    = null;
-      let subStatusDesc = null;
-
-      let basicOk   = false;
-      let headOk    = false;
-      let networkError = false;
-
-      const headers = {
-        "accept":"application/json, text/plain, */*",
-        "fms-client":FMS_CLIENT,
-        "fms-token":token,
-        "company-id":COMPANY_ID
-      };
-
-      // Basic info
-      try{
-        const r = await fetch(ORDER_BASIC_URL + encodeURIComponent(DO), { method:"GET", headers });
-        if (!r.ok) throw new Error("bad status");
-        const j = await r.json();
-        const root = j?.data || j;
-        loc = root?.current_location ?? root?.currentLocation ?? null;
-        basicOk = true;
-      }catch(e){
-        if (e instanceof TypeError){
-          networkError = true;
-        }
-      }
-
-      // Head info
-      try{
-        const r = await fetch(ORDER_HEAD_URL + encodeURIComponent(DO), { method:"GET", headers });
-        if (!r.ok) throw new Error("bad status");
-        const j = await r.json();
-        const root = j?.data || j;
-        statusDesc    = root?.order_status_describe ?? null;
-        subStatusDesc = root?.order_sub_status_describe ?? null;
-        headOk = true;
-      }catch(e){
-        if (e instanceof TypeError){
-          networkError = true;
-        }
-      }
-
-      if (networkError){
-        line(`${pro} | PU - -> ${DO} | Network error - please check connection ---`);
-      }else if (!basicOk && !headOk){
-        line(`${pro} | PU - -> ${DO} | ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance ---`);
-      }else{
-        const segs = [];
-        if (basicOk){
-          segs.push(`Loc: ${loc || "—"}`);
-        }
-        if (headOk){
-          segs.push(`Status: ${statusDesc || "—"}`);
-          segs.push(`Substatus: ${subStatusDesc || "—"}`);
-        }
-        let lineText = `${pro} | PU - -> ${DO}`;
-        if (segs.length){
-          lineText += " | " + segs.join(" | ");
-        }
-        if (!basicOk || !headOk){
-          lineText += " | ERROR retrieving additional status info. Please try again or contact christopher.mosqueda@item.com for assistance";
-        }
-        lineText += " ---";
-        line(lineText);
-      }
-
-      setProg(i+1,total,start);
-    }
-
-    if (overflow.length){
-      line(`NOT CHECKED (over ${MAX_ORDERS} cap):`);
-      overflow.forEach(p=>line(`  ${p} ---`));
-    }
-
-    status.textContent = "Check complete";
-    expBtn.disabled = !out.textContent.trim();
-  }catch(e){
-    status.textContent = "Error";
-    line(`ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance ---`);
-  }
-}
-
-/* =========================
-   BINDINGS
-========================= */
-actionSel.addEventListener("change", ()=>{
-  const a = actionSel.value;
-  terminalBlock.style.display  = (a==="offload") ? "" : "none";
-  pickupBlock.style.display    = (a==="pickup_complete") ? "" : "none";
-  deliveredBlock.style.display = (a==="delivered") ? "" : "none";
-  if (a==="offload" && !termsLoaded && !termsLoading) fetchTerminals();
-  enableButtons();
-});
-input.addEventListener("input", ()=>{
   const pros = parsePros(input.value);
-  proMeta.textContent = `${pros.length} PRO${pros.length===1?"":"s"} detected`;
-  enableButtons();
-});
-terminal.addEventListener("input", ()=>{
-  const pos = terminal.selectionStart;
-  terminal.value = kUp(terminal.value);
-  terminal.setSelectionRange(pos,pos);
-  if (isVisible(terminalBlock)) validateTerminal();
-  enableButtons();
-});
-refreshBtn.addEventListener("click", ()=>fetchTerminals());
-browseBtn.addEventListener("click", ()=>{
-  if (!termsLoaded && !termsLoading) fetchTerminals().then(()=>{ openModal(); });
-  else openModal();
-});
-function openModal(){
-  mb.style.display="flex";
-  msearch.value="";
-  renderList();
-  msearch.focus();
-}
-function closeModal(){ mb.style.display="none"; }
-mclose.addEventListener("click", ()=>closeModal());
-mb.addEventListener("click", e=>{ if (e.target===mb) closeModal(); });
-msearch.addEventListener("input", ()=>renderList(msearch.value));
-["input","change","keyup","blur"].forEach(ev => {
-  pickupDt.addEventListener(ev, enableButtons);
-  deliveredDt.addEventListener(ev, enableButtons);
-});
+  if(!pros.length){ line("[Error] No PROs found."); return; }
 
-runBtn.addEventListener("click", ()=>run());
-prevBtn.addEventListener("click", ()=>checkOrderInfo());
-expBtn.addEventListener("click", ()=>{
-  const blob = new Blob([out.textContent],{type:"text/plain;charset=utf-8"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `fms_overrides_${new Date().toISOString().replace(/[:.]/g,"-")}.txt`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 800);
-});
+  const token = await auth();
+  const headers = {
+    "accept":"application/json, text/plain, */*",
+    "fms-client":FMS_CLIENT,
+    "fms-token":token,
+    "company-id":COMPANY_ID
+  };
 
-/* Boot */
-(function boot(){
-  const pros = parsePros(input.value);
-  proMeta.textContent = `${pros.length} PRO${pros.length===1?"":"s"} detected`;
-  enableButtons();
-})();
-})();
+  for(const pro of pros){
+    // Step 1: Get DO from search
+    let DO=null;
+    try{
+      const search = await fetch(`https://fms.item.com/fms-platform-order/shipment-orders/query`,{
+        method:"POST",
+        headers:{...headers, "Content-Type":"application/json"},
+        body:JSON.stringify({
+          tracking_nos:[pro], page_number:1, page_size:1
+        })
+      });
+      const j = await search.json();
+      const items = j?.data?.items || j.items || [];
+      if(items.length){
+        DO = items[0].order_no || items[0].orderNo || null;
+      }
+    }catch(e){}
+
+    if(!DO){ line(`${pro} -> (no DO found) ---`); continue; }
+
+    // Step 2: Pull PU & location/status fields
+    let loc=null, statusDesc=null, subStatus=null, pu="-";
+
+    try{
+      const r = await fetch(ORDER_BASIC_URL + DO, {headers});
+      const j = await r.json();
+      const root = j?.data || j;
+      loc = root?.current_location;
+      pu = root?.reference5 || "-";
+    }catch(e){}
+
+    try{
+      const r2 = await fetch(ORDER_HEAD_URL + DO, {headers});
+      const j2 = await r2.json();
+      const root = j2?.data || j2;
+      statusDesc = root?.order_status_describe;
+      subStatus  = root?.order_sub_status_describe;
+    }catch(e){}
+
+    // FORMAT OUTPUT
+    const WIDTH = { pro:12, pu:12, DO:16 };
+
+    function pad(v,w){
+      v = clean(v);
+      return v.length>w ? v.slice(0,w) : v + " ".repeat(w-v.length);
+    }
+
+    const outLine =
+      `PRO ${pad(pro,WIDTH.pro)} | PU ${pad(pu,WIDTH.pu)} -> ${pad(DO,WIDTH.DO)} | Loc: ${clean(loc)} | Status: ${clean(statusDesc)} | Substatus: ${clean(subStatus)} ---`;
+
+    line(outLine);
+  }
+
+  $("status").textContent="Done";
+});
 </script>
+
 </body>
 </html>
