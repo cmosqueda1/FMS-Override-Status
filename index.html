@@ -503,9 +503,9 @@ async function runOffload({token, terminalValue, pairs}){
       summary="Invalid DO format";
     }
     if (ok){
-      results.push(`${pro} -> ${DO} - overridden (Offload @ ${terminalValue}) ---`);
+      results.push(`${pro} | PU - -> ${DO} - overridden (Offload @ ${terminalValue}) ---`);
     } else {
-      results.push(`${pro} -> ${DO} | ${summary || "Override failed"} ---`);
+      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override failed"} ---`);
     }
     setProg(i+1,total,start);
   }
@@ -540,9 +540,9 @@ async function runNew({token, pairs}){
       }
     }
     if (ok){
-      results.push(`${pro} -> ${DO} - overridden to NEW ---`);
+      results.push(`${pro} | PU - -> ${DO} - overridden to NEW ---`);
     } else {
-      results.push(`${pro} -> ${DO} | ${summary || "Override to NEW failed"} ---`);
+      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to NEW failed"} ---`);
     }
     setProg(i+1,total,start);
   }
@@ -578,9 +578,9 @@ async function runPickupComplete({token, pairs, dtLocal}){
       }
     }
     if (ok){
-      results.push(`${pro} -> ${DO} - overridden to PICKUP COMPLETE (${pickupTime}) ---`);
+      results.push(`${pro} | PU - -> ${DO} - overridden to PICKUP COMPLETE (${pickupTime}) ---`);
     } else {
-      results.push(`${pro} -> ${DO} | ${summary || "Override to PICKUP COMPLETE failed"} ---`);
+      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to PICKUP COMPLETE failed"} ---`);
     }
     setProg(i+1,total,start);
   }
@@ -616,9 +616,9 @@ async function runDelivered({token, pairs, dtLocal}){
       }
     }
     if (ok){
-      results.push(`${pro} -> ${DO} - overridden to DELIVERED (${deliveredTime}) ---`);
+      results.push(`${pro} | PU - -> ${DO} - overridden to DELIVERED (${deliveredTime}) ---`);
     } else {
-      results.push(`${pro} -> ${DO} | ${summary || "Override to DELIVERED failed"} ---`);
+      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to DELIVERED failed"} ---`);
     }
     setProg(i+1,total,start);
   }
@@ -773,9 +773,9 @@ async function checkOrderInfo(){
       }
 
       if (networkError){
-        line(`${pro} -> ${DO} | Network error - please check connection ---`);
+        line(`${pro} | PU - -> ${DO} | Network error - please check connection ---`);
       }else if (!basicOk && !headOk){
-        line(`${pro} -> ${DO} | ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance ---`);
+        line(`${pro} | PU - -> ${DO} | ERROR retrieving order info. Please try again or contact christopher.mosqueda@item.com for assistance ---`);
       }else{
         const segs = [];
         if (basicOk){
@@ -785,7 +785,7 @@ async function checkOrderInfo(){
           segs.push(`Status: ${statusDesc || "—"}`);
           segs.push(`Substatus: ${subStatusDesc || "—"}`);
         }
-        let lineText = `${pro} -> ${DO}`;
+        let lineText = `${pro} | PU - -> ${DO}`;
         if (segs.length){
           lineText += " | " + segs.join(" | ");
         }
