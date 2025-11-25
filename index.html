@@ -70,6 +70,7 @@
           <option value="offload">Override Offload</option>
           <option value="pickup_complete">Override Pickup Complete</option>
           <option value="delivered">Override Delivered</option>
+          <option value="ofd">Override to Out-For-Delivery</option>
         </select>
       </div>
 
@@ -176,6 +177,7 @@ const OFFLOAD_URL    = `${BASE}/fms-platform-order/status/shipment/set-offload`;
 const NEW_STATUS_URL = `${BASE}/fms-platform-order/order-override-status/override-to-new`;
 const PICKUP_URL     = `${BASE}/fms-platform-order/order-override-status/override-to-pickup-complete`;
 const DELIVERED_URL  = `${BASE}/fms-platform-order/order-override-status/override-to-delivered`;
+const OFD_URL        = `${BASE}/fms-platform-order/order-override-status/override-to-out-for-delivery`;
 const TERM_URL       = `${BASE}/fms-platform-dispatch-management/public-location/current-company-terminals?terminalType=0`;
 
 // For "Check Order Info"
@@ -624,6 +626,61 @@ async function runDelivered({token, pairs, dtLocal}){
   }
   return results;
 }
+async function runOutForDelivery({token, pairs}) {
+  const headers = {
+    "accept":"application/json, text/plain, */*",
+    "content-type":"application/json",
+    "fms-client":FMS_CLIENT,
+    "fms-token":token,
+    "company-id":COMPANY_ID,
+    "actual-operate-time":new Date().toISOString().slice(0,10)
+  };
+
+  const start = now();
+  const total = pairs.length;
+  const results = [];
+  setProg(0, total, start);
+
+  for (let i = 0; i < pairs.length; i++) {
+    const [pro, DO] = pairs[i];
+    let ok = false, summary = "";
+
+    const payload = {
+      order_no: DO,
+      order_status: 42,
+      pro_no: pro
+    };
+
+    for (let a = 0; a <= RETRIES; a++) {
+      try {
+        const r = await fetch(OFD_URL, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload)
+        });
+
+        const j = await r.json().catch(() => ({}));
+        const bizOk = r.ok && isBusinessSuccess(j);
+
+        if (bizOk) { ok = true; break; }
+        else { summary = summarizeFailureFromResponse(j); }
+
+      } catch (e) {
+        summary = e?.message || "Network error";
+      }
+    }
+
+    if (ok) {
+      results.push(`${pro} | PU - -> ${DO} - overridden to OUT-FOR-DELIVERY ---`);
+    } else {
+      results.push(`${pro} | PU - -> ${DO} | ${summary || "Override to OUT-FOR-DELIVERY failed"} ---`);
+    }
+
+    setProg(i + 1, total, start);
+  }
+
+  return results;
+}
 
 /* =========================
    MASTER RUN
@@ -672,6 +729,8 @@ async function run(){
       results = await runPickupComplete({token, pairs, dtLocal:pickupDt.value});
     } else if (a==="delivered"){
       results = await runDelivered({token, pairs, dtLocal:deliveredDt.value});
+    } else if (a==="ofd"){
+      results = await runOutForDelivery({token, pairs});
     }
     results.forEach(line);
 
