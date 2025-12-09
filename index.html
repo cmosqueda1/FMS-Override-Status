@@ -79,31 +79,27 @@ const $=id=>document.getElementById(id);
 let TOKEN=null;
 
 async function auth(){
-  if(TOKEN) return TOKEN;
+  if (TOKEN) return TOKEN;
 
-  $("status").textContent="Logging in…";
-
-  const r = await fetch(LOGIN_URL,{
+  const r = await fetch("https://fms.item.com/fms-platform-user/Auth/Login",{
     method:"POST",
     headers:{
-      "fms-client":CLIENT,
+      "fms-client":"FMS_WEB",
       "Content-Type":"application/json"
     },
-    body:JSON.stringify({
-      account:$("user").value.trim(),
-      password:$("pass").value.trim()
+    body: JSON.stringify({
+      account: USERNAME,
+      password: PASSWORD
     })
   });
 
-  if(!r.ok) throw new Error("Login failed");
+  if(!r.ok) throw new Error("Login HTTP " + r.status);
 
   const j = await r.json();
+
   TOKEN = j.token || j?.data?.token;
 
-  if(!TOKEN){
-    console.log(j);
-    throw new Error("Token missing from response");
-  }
+  if(!TOKEN) throw new Error("No token returned");
 
   return TOKEN;
 }
